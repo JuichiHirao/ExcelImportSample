@@ -22,6 +22,7 @@ namespace ExcelImportSample
     /// </summary>
     public partial class MainWindow : Window
     {
+        enum CellNameV1 { DiskNo, Seq, RipStatus, OnAirDate, BeforeRip, Kind, Channel, ProgramId, ProgramName, ProgramDisplay, Detail, StartTime, Duration }
         enum CellName { DiskNo, Seq, RipStatus, OnAirDate, DayOfWeek, ProgramId, ProgramDisplay, StartTime, Duration, Detail }
 
         public MainWindow()
@@ -50,9 +51,63 @@ namespace ExcelImportSample
                 }
             }
 
-            ISheet worksheet = workbook.GetSheet("TV録画V2");
+            TvV1(workbook);
+            // ClosedXML
+            /*
+            var path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "tv.xlsx");
+
+            //var workbook = new XLWorkbook(path, XLEventTracking.Disabled);
+            //var workbook = new XLWorkbook("file:///c:/SHARE/tv.xlsx");
+            var workbook = new XLWorkbook(@"C:\SHARE\TV-RECORD.xlsx");
+
+            var worksheets = workbook.Worksheets;
+
+            foreach(var worksheet in worksheets)
+            {
+                Debug.Print("Name " + worksheet.Name);
+            }
+             */
+        }
+
+        public void TvV1(IWorkbook myWorkbook)
+        {
+            // enum CellNameV1 { DiskNo, Seq, RipStatus, OnAirDate, BeforeRip, Kind, Channel, ProgramId, ProgramName, ProgramDisplay, Detail, StartTime, Duration }
+
+            ISheet worksheet = myWorkbook.GetSheet("TV録画");
             int lastRow = worksheet.LastRowNum;
-            Debug.Print(workbook.NumberOfSheets.ToString());
+            Debug.Print(myWorkbook.NumberOfSheets.ToString());
+            Debug.Print("lastRow " + lastRow);
+
+            // enum CellName { DiskNo, Seq, RipStatus, OnAirDate, DayOfWeek, ProgramId, Duration, Detail }
+
+            for (int i = 900; i <= 903; i++)
+            {
+                IRow row = worksheet.GetRow(i);
+                string diskNo = GetStringCellData(CellNameV1.DiskNo, row?.GetCell((int)CellNameV1.DiskNo));
+                string diskSeq = GetStringCellData(CellNameV1.Seq, row?.GetCell((int)CellNameV1.Seq));
+                string ripStatus = GetStringCellData(CellNameV1.RipStatus, row?.GetCell((int)CellNameV1.RipStatus));
+                string onAirDate = GetStringCellData(CellNameV1.OnAirDate, row?.GetCell((int)CellNameV1.OnAirDate));
+                string programId = GetStringCellData(CellNameV1.ProgramId, row?.GetCell((int)CellNameV1.ProgramId));
+                string programName = GetStringCellData(CellNameV1.ProgramDisplay, row?.GetCell((int)CellNameV1.ProgramDisplay));
+                string startTime = GetStringCellData(CellNameV1.StartTime, row?.GetCell((int)CellNameV1.StartTime));
+                string duration = GetStringCellData(CellNameV1.Duration, row?.GetCell((int)CellNameV1.Duration));
+                string detail = GetStringCellData(CellNameV1.Detail, row?.GetCell((int)CellNameV1.Detail));
+
+                if (startTime.Trim().Length > 0)
+                    onAirDate = onAirDate + " " + startTime + ":00";
+
+                //ICell cell = row?.GetCell((int)CellName.DiskNo);
+                Debug.Print(i + "  " + diskNo + "  Seq:" + diskSeq + " Rip:" + ripStatus + "  onAirDate:" + onAirDate + "  ProgramId:" + programId + "  programName:" + programName);
+                Debug.Print("    startTime:" + startTime + " duration:" + duration + "  detail:" + detail);
+                //Console.WriteLine(cell?.StringCellValue);
+            }
+        }
+
+        public void TvV2(IWorkbook myWorkbook)
+        {
+            ISheet worksheet = myWorkbook.GetSheet("TV録画V2");
+            int lastRow = worksheet.LastRowNum;
+            Debug.Print(myWorkbook.NumberOfSheets.ToString());
             Debug.Print("lastRow " + lastRow);
 
             // enum CellName { DiskNo, Seq, RipStatus, OnAirDate, DayOfWeek, ProgramId, Duration, Detail }
@@ -78,24 +133,18 @@ namespace ExcelImportSample
                 Debug.Print("    startTime:" + startTime + " duration:" + duration + "  detail:" + detail);
                 //Console.WriteLine(cell?.StringCellValue);
             }
-
-            // ClosedXML
-            /*
-            var path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "tv.xlsx");
-
-            //var workbook = new XLWorkbook(path, XLEventTracking.Disabled);
-            //var workbook = new XLWorkbook("file:///c:/SHARE/tv.xlsx");
-            var workbook = new XLWorkbook(@"C:\SHARE\TV-RECORD.xlsx");
-
-            var worksheets = workbook.Worksheets;
-
-            foreach(var worksheet in worksheets)
-            {
-                Debug.Print("Name " + worksheet.Name);
-            }
-             */
         }
+
         private string GetStringCellData(CellName myCellName, ICell myCell)
+        {
+            return GetStringCellDataCore(myCellName.ToString(), myCell);
+        }
+        private string GetStringCellData(CellNameV1 myCellName, ICell myCell)
+        {
+            return GetStringCellDataCore(myCellName.ToString(), myCell);
+        }
+
+        private string GetStringCellDataCore(string myCellName, ICell myCell)
         {
             string cellStr = "";
             if (myCell == null)
@@ -114,7 +163,7 @@ namespace ExcelImportSample
                         // 日付型
                         // 本来はスタイルに合わせてフォーマットすべきだが、
                         // うまく表示できないケースが若干見られたので固定のフォーマットとして取得
-                        cellStr = myCell.DateCellValue.ToString("yyyy/MM/dd");
+                        cellStr = myCell.DateCellValue.ToString("yyyy/MM/dd HH:mm:ss");
                     }
                     else
                     {
