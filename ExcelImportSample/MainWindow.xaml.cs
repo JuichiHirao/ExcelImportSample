@@ -1,6 +1,9 @@
-﻿using NPOI.SS.UserModel;
+﻿using ExcelImportSample.data;
+using NPOI.SS.UserModel;
 using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -37,7 +40,6 @@ namespace ExcelImportSample
             //IWorkbook workbook = WorkbookFactory.Create(@"C:\SHARE\TV-RECORD.xlsx");
             // IWorkbook workbook = WorkbookFactory.Create(@"tv.xlsx");
             IWorkbook workbook = WorkbookFactory.Create(@"C:\Users\JuuichiHirao\Dropbox\Interest\BD番組録画TEST.xlsx");
-            // C:\Users\JuuichiHirao\Dropbox\Interest\BD番組録画.xlsx
 
             for(int idx=0; idx < 10; idx++)
             {
@@ -51,55 +53,40 @@ namespace ExcelImportSample
                 }
             }
 
+            DbClear(new DbConnection());
+
             TvV1(workbook);
-            // ClosedXML
-            /*
-            var path = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), "tv.xlsx");
-
-            //var workbook = new XLWorkbook(path, XLEventTracking.Disabled);
-            //var workbook = new XLWorkbook("file:///c:/SHARE/tv.xlsx");
-            var workbook = new XLWorkbook(@"C:\SHARE\TV-RECORD.xlsx");
-
-            var worksheets = workbook.Worksheets;
-
-            foreach(var worksheet in worksheets)
-            {
-                Debug.Print("Name " + worksheet.Name);
-            }
-             */
+            TvV2(workbook);
         }
 
         public void TvV1(IWorkbook myWorkbook)
         {
-            // enum CellNameV1 { DiskNo, Seq, RipStatus, OnAirDate, BeforeRip, Kind, Channel, ProgramId, ProgramName, ProgramDisplay, Detail, StartTime, Duration }
-
             ISheet worksheet = myWorkbook.GetSheet("TV録画");
             int lastRow = worksheet.LastRowNum;
             Debug.Print(myWorkbook.NumberOfSheets.ToString());
             Debug.Print("lastRow " + lastRow);
 
-            // enum CellName { DiskNo, Seq, RipStatus, OnAirDate, DayOfWeek, ProgramId, Duration, Detail }
-
-            for (int i = 900; i <= 903; i++)
+            for (int i = 1; i <= lastRow; i++)
             {
                 IRow row = worksheet.GetRow(i);
-                string diskNo = GetStringCellData(CellNameV1.DiskNo, row?.GetCell((int)CellNameV1.DiskNo));
-                string diskSeq = GetStringCellData(CellNameV1.Seq, row?.GetCell((int)CellNameV1.Seq));
-                string ripStatus = GetStringCellData(CellNameV1.RipStatus, row?.GetCell((int)CellNameV1.RipStatus));
+
+                Record record = new Record();
+                record.DiskNo = GetStringCellData(CellNameV1.DiskNo, row?.GetCell((int)CellNameV1.DiskNo));
+                record.Seq = GetStringCellData(CellNameV1.Seq, row?.GetCell((int)CellNameV1.Seq));
+                record.RipStatus = GetStringCellData(CellNameV1.RipStatus, row?.GetCell((int)CellNameV1.RipStatus));
                 string onAirDate = GetStringCellData(CellNameV1.OnAirDate, row?.GetCell((int)CellNameV1.OnAirDate));
-                string programId = GetStringCellData(CellNameV1.ProgramId, row?.GetCell((int)CellNameV1.ProgramId));
+                record.ProgramId = GetStringCellData(CellNameV1.ProgramId, row?.GetCell((int)CellNameV1.ProgramId));
                 string programName = GetStringCellData(CellNameV1.ProgramDisplay, row?.GetCell((int)CellNameV1.ProgramDisplay));
                 string startTime = GetStringCellData(CellNameV1.StartTime, row?.GetCell((int)CellNameV1.StartTime));
-                string duration = GetStringCellData(CellNameV1.Duration, row?.GetCell((int)CellNameV1.Duration));
-                string detail = GetStringCellData(CellNameV1.Detail, row?.GetCell((int)CellNameV1.Detail));
+                record.Duration = GetStringCellData(CellNameV1.Duration, row?.GetCell((int)CellNameV1.Duration));
+                record.Detail = GetStringCellData(CellNameV1.Detail, row?.GetCell((int)CellNameV1.Detail));
 
-                if (startTime.Trim().Length > 0)
-                    onAirDate = onAirDate + " " + startTime + ":00";
+                record.SetOnAirDate(onAirDate);
 
-                //ICell cell = row?.GetCell((int)CellName.DiskNo);
-                Debug.Print(i + "  " + diskNo + "  Seq:" + diskSeq + " Rip:" + ripStatus + "  onAirDate:" + onAirDate + "  ProgramId:" + programId + "  programName:" + programName);
-                Debug.Print("    startTime:" + startTime + " duration:" + duration + "  detail:" + detail);
-                //Console.WriteLine(cell?.StringCellValue);
+                DbExport(record, new DbConnection());
+
+                //Debug.Print(i + "  " + record.DiskNo + "  Seq:" + record.Seq + " Rip:" + record.RipStatus + "  onAirDate:" + record.OnAirDate + "  ProgramId:" + record.ProgramId + "  programName:" + programName);
+                //Debug.Print("    startTime:" + startTime + " duration:" + record.Duration + "  detail:" + record.Detail);
             }
         }
 
@@ -110,28 +97,26 @@ namespace ExcelImportSample
             Debug.Print(myWorkbook.NumberOfSheets.ToString());
             Debug.Print("lastRow " + lastRow);
 
-            // enum CellName { DiskNo, Seq, RipStatus, OnAirDate, DayOfWeek, ProgramId, Duration, Detail }
-
-            for (int i = 900; i <= 903; i++)
+            for (int i = 800; i <= 803; i++)
             {
                 IRow row = worksheet.GetRow(i);
-                string diskNo = GetStringCellData(CellName.DiskNo, row?.GetCell((int)CellName.DiskNo));
-                string diskSeq = GetStringCellData(CellName.Seq, row?.GetCell((int)CellName.Seq));
-                string ripStatus = GetStringCellData(CellName.RipStatus, row?.GetCell((int)CellName.RipStatus));
+                Record record = new Record();
+                record.DiskNo = GetStringCellData(CellName.DiskNo, row?.GetCell((int)CellName.DiskNo));
+                record.Seq = GetStringCellData(CellName.Seq, row?.GetCell((int)CellName.Seq));
+                record.RipStatus = GetStringCellData(CellName.RipStatus, row?.GetCell((int)CellName.RipStatus));
                 string onAirDate = GetStringCellData(CellName.OnAirDate, row?.GetCell((int)CellName.OnAirDate));
-                string programId = GetStringCellData(CellName.ProgramId, row?.GetCell((int)CellName.ProgramId));
+                record.ProgramId = GetStringCellData(CellName.ProgramId, row?.GetCell((int)CellName.ProgramId));
                 string programName = GetStringCellData(CellName.ProgramDisplay, row?.GetCell((int)CellName.ProgramDisplay));
                 string startTime = GetStringCellData(CellName.StartTime, row?.GetCell((int)CellName.StartTime));
-                string duration = GetStringCellData(CellName.Duration, row?.GetCell((int)CellName.Duration));
-                string detail = GetStringCellData(CellName.Detail, row?.GetCell((int)CellName.Detail));
+                record.Duration = GetStringCellData(CellName.Duration, row?.GetCell((int)CellName.Duration));
+                record.Detail = GetStringCellData(CellName.Detail, row?.GetCell((int)CellName.Detail));
 
-                if (startTime.Trim().Length > 0)
-                    onAirDate = onAirDate + " " + startTime + ":00";
+                record.SetOnAirDate(onAirDate, startTime);
 
-                //ICell cell = row?.GetCell((int)CellName.DiskNo);
-                Debug.Print(i + "  " + diskNo + "  Seq:" + diskSeq + " Rip:" + ripStatus + "  onAirDate:" + onAirDate + "  ProgramId:" + programId + "  programName:" + programName);
-                Debug.Print("    startTime:" + startTime + " duration:" + duration + "  detail:" + detail);
-                //Console.WriteLine(cell?.StringCellValue);
+                DbExport(record, new DbConnection());
+
+                //Debug.Print(i + "  " + record.DiskNo + "  Seq:" + record.Seq + " Rip:" + record.RipStatus + "  onAirDate:" + record.OnAirDate + "  ProgramId:" + record.ProgramId + "  programName:" + programName);
+                //Debug.Print("    startTime:" + startTime + " duration:" + record.Duration + "  detail:" + record.Detail);
             }
         }
 
@@ -163,7 +148,7 @@ namespace ExcelImportSample
                         // 日付型
                         // 本来はスタイルに合わせてフォーマットすべきだが、
                         // うまく表示できないケースが若干見られたので固定のフォーマットとして取得
-                        cellStr = myCell.DateCellValue.ToString("yyyy/MM/dd HH:mm:ss");
+                        cellStr = myCell.DateCellValue.ToString("yyyy/MM/dd");
                     }
                     else
                     {
@@ -187,7 +172,7 @@ namespace ExcelImportSample
 
                             if (DateUtil.IsCellDateFormatted(myCell))
                             {
-                                cellStr = myCell.DateCellValue.ToString("yyyy/MM/dd HH:mm:ss");
+                                cellStr = myCell.DateCellValue.ToString("yyyy/MM/dd");
                             }
                             else
                             {
@@ -213,7 +198,61 @@ namespace ExcelImportSample
             }
 
             return cellStr;
+        }
 
+        public void DbClear(DbConnection myDbCon)
+        {
+            string sqlCommand = "DELETE FROM RECORD ";
+
+            SqlCommand command = new SqlCommand();
+
+            command = new SqlCommand(sqlCommand, myDbCon.getSqlConnection());
+
+            myDbCon.execSqlCommand(sqlCommand);
+        }
+
+        public void DbExport(Record myRecord, DbConnection myDbCon)
+        {
+            string sqlCommand = "INSERT INTO RECORD ";
+            sqlCommand += "( DISK, SEQ, STATUS, ON_AIR_DATE, PROGRAM_ID, DURATION, DETAIL ) ";
+            sqlCommand += "VALUES( @Disk, @Seq, @Status, @OnAirDate, @ProgramId, @Duration, @Detail )";
+
+            SqlCommand command = new SqlCommand();
+
+            command = new SqlCommand(sqlCommand, myDbCon.getSqlConnection());
+
+            List<SqlParameter> sqlparamList = new List<SqlParameter>();
+
+            SqlParameter sqlParam = new SqlParameter("@Disk", SqlDbType.VarChar);
+            sqlParam.Value = myRecord.DiskNo;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@Seq", SqlDbType.VarChar);
+            sqlParam.Value = myRecord.Seq;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@Status", SqlDbType.VarChar);
+            sqlParam.Value = myRecord.RipStatus;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@OnAirDate", SqlDbType.DateTime);
+            sqlParam.Value = myRecord.OnAirDate;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@ProgramId", SqlDbType.VarChar);
+            sqlParam.Value = myRecord.ProgramId;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@Duration", SqlDbType.VarChar);
+            sqlParam.Value = myRecord.Duration;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@Detail", SqlDbType.VarChar);
+            sqlParam.Value = myRecord.Detail;
+            sqlparamList.Add(sqlParam);
+
+            myDbCon.SetParameter(sqlparamList.ToArray());
+            myDbCon.execSqlCommand(sqlCommand);
         }
     }
 }
