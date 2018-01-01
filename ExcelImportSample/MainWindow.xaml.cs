@@ -39,6 +39,39 @@ namespace ExcelImportSample
 
         }
 
+        public void Program(IWorkbook myWorkbook)
+        {
+            ISheet worksheet = myWorkbook.GetSheet("番組名");
+            int lastRow = worksheet.LastRowNum;
+            Debug.Print(myWorkbook.NumberOfSheets.ToString());
+            Debug.Print("lastRow " + lastRow);
+
+            for (int i = 1; i <= lastRow; i++)
+            {
+                IRow row = worksheet.GetRow(i);
+
+                Program program = new Program();
+                program.Id = GetStringCellData(CellNameProgram.Id, row?.GetCell((int)CellNameProgram.Id));
+                program.Name = GetStringCellData(CellNameProgram.Name, row?.GetCell((int)CellNameProgram.Name));
+                program.AbbreviationName = GetStringCellData(CellNameProgram.Name, row?.GetCell((int)CellNameProgram.Name));
+                program.Kind = GetStringCellData(CellNameProgram.Kind, row?.GetCell((int)CellNameProgram.Kind));
+                program.RelationId = GetStringCellData(CellNameProgram.RelationId, row?.GetCell((int)CellNameProgram.RelationId));
+                program.DateKind = GetStringCellData(CellNameProgram.DateKind, row?.GetCell((int)CellNameProgram.DateKind));
+                string onAirStart = GetStringCellData(CellNameProgram.OnAirStart, row?.GetCell((int)CellNameProgram.OnAirStart));
+                string onAirEnd = GetStringCellData(CellNameProgram.OnAirEnd, row?.GetCell((int)CellNameProgram.OnAirEnd));
+                program.Detail = GetStringCellData(CellNameProgram.Detail, row?.GetCell((int)CellNameProgram.Detail));
+
+                program.SetOnAirStart(onAirStart);
+                program.SetOnAirEnd(onAirEnd);
+
+                DbExport(program, new DbConnection());
+
+                Debug.Print(i + "  " + program.Id + "  Name:" + program.Name + " AbbreviationName:" + program.AbbreviationName + "  Kind:" + program.Kind + "  DateKind:" + program.DateKind);
+                Debug.Print("    RelationId:" + program.RelationId + " OnAirDuration:" + program.OnAirStart + "～" + program.OnAirEnd);
+                Debug.Print("    Detail:" + program.Detail);
+            }
+        }
+
         public void TvV1(IWorkbook myWorkbook)
         {
             ISheet worksheet = myWorkbook.GetSheet("TV録画");
@@ -105,6 +138,11 @@ namespace ExcelImportSample
             return GetStringCellDataCore(myCellName.ToString(), myCell);
         }
         private string GetStringCellData(CellNameV1 myCellName, ICell myCell)
+        {
+            return GetStringCellDataCore(myCellName.ToString(), myCell);
+        }
+
+        private string GetStringCellData(CellNameProgram myCellName, ICell myCell)
         {
             return GetStringCellDataCore(myCellName.ToString(), myCell);
         }
@@ -191,6 +229,17 @@ namespace ExcelImportSample
             myDbCon.execSqlCommand(sqlCommand);
         }
 
+        public void DbClearProgram(DbConnection myDbCon)
+        {
+            string sqlCommand = "DELETE FROM PROGRAM ";
+
+            SqlCommand command = new SqlCommand();
+
+            command = new SqlCommand(sqlCommand, myDbCon.getSqlConnection());
+
+            myDbCon.execSqlCommand(sqlCommand);
+        }
+
         public void DbExport(Record myRecord, DbConnection myDbCon)
         {
             string sqlCommand = "INSERT INTO RECORD ";
@@ -235,6 +284,54 @@ namespace ExcelImportSample
             myDbCon.execSqlCommand(sqlCommand);
         }
 
+        public void DbExport(Program myProgram, DbConnection myDbCon)
+        {
+            string sqlCommand = "INSERT INTO PROGRAM ";
+            sqlCommand += "( PROGRAM_ID, NAME, ABBREVIATION_NAME, RELATION_ID, ON_AIR_START, ON_AIR_END, DETAIL, REMARK ) ";
+            sqlCommand += "VALUES( @Id, @Name, @AbbeviationName, @RelationId, @OnAirStart, @OnAirEnd, @Detail, @Remark )";
+
+            SqlCommand command = new SqlCommand();
+
+            command = new SqlCommand(sqlCommand, myDbCon.getSqlConnection());
+
+            List<SqlParameter> sqlparamList = new List<SqlParameter>();
+
+            SqlParameter sqlParam = new SqlParameter("@Id", SqlDbType.Int);
+            sqlParam.Value = myProgram.Id;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@Name", SqlDbType.VarChar);
+            sqlParam.Value = myProgram.Name;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@AbbeviationName", SqlDbType.VarChar);
+            sqlParam.Value = myProgram.AbbreviationName;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@RelationId", SqlDbType.VarChar);
+            sqlParam.Value = myProgram.RelationId;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@OnAirStart", SqlDbType.DateTime);
+            sqlParam.Value = myProgram.OnAirStart;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@OnAirEnd", SqlDbType.DateTime);
+            sqlParam.Value = myProgram.OnAirEnd;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@Detail", SqlDbType.VarChar);
+            sqlParam.Value = myProgram.Detail;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@Remark", SqlDbType.VarChar);
+            sqlParam.Value = myProgram.Remark;
+            sqlparamList.Add(sqlParam);
+
+            myDbCon.SetParameter(sqlparamList.ToArray());
+            myDbCon.execSqlCommand(sqlCommand);
+        }
+
         private void OnImportExecute(object sender, RoutedEventArgs e)
         {
             // NPOI
@@ -259,6 +356,27 @@ namespace ExcelImportSample
 
             TvV1(workbook);
             TvV2(workbook);
+        }
+
+        private void OnImportProgramExecute(object sender, RoutedEventArgs e)
+        {
+            IWorkbook workbook = WorkbookFactory.Create(@"C:\Users\JuuichiHirao\Dropbox\Interest\BD番組録画TEST.xlsx");
+
+            for (int idx = 0; idx < 10; idx++)
+            {
+                try
+                {
+                    Debug.Print(idx + " " + workbook.GetSheetName(idx));
+                }
+                catch (Exception)
+                {
+                    break;
+                }
+            }
+
+            DbClear(new DbConnection());
+
+            Program(workbook);
         }
     }
 }
