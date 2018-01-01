@@ -27,6 +27,7 @@ namespace ExcelImportSample
     {
         enum CellNameV1 { DiskNo, Seq, RipStatus, OnAirDate, BeforeRip, Kind, Channel, ProgramId, ProgramName, ProgramDisplay, Detail, StartTime, Duration }
         enum CellName { DiskNo, Seq, RipStatus, OnAirDate, DayOfWeek, ProgramId, ProgramDisplay, StartTime, Duration, Detail }
+        enum CellNameProgram { Id, ChannelName, Name, AbbreviationName, Kind, RelationId, DateKind, OnAirStart, OnAirEnd, Detail }
 
         public MainWindow()
         {
@@ -35,28 +36,7 @@ namespace ExcelImportSample
 
         private void Window_Loaded(object sender, RoutedEventArgs e)
         {
-            // NPOI
-            // （WorkbookFactory.Create()を使ってinterfaceで受け取れば、xls, xlsxの両方に対応できます）
-            //IWorkbook workbook = WorkbookFactory.Create(@"C:\SHARE\TV-RECORD.xlsx");
-            // IWorkbook workbook = WorkbookFactory.Create(@"tv.xlsx");
-            IWorkbook workbook = WorkbookFactory.Create(@"C:\Users\JuuichiHirao\Dropbox\Interest\BD番組録画TEST.xlsx");
 
-            for(int idx=0; idx < 10; idx++)
-            {
-                try
-                {
-                    Debug.Print(idx + " " + workbook.GetSheetName(idx));
-                }
-                catch (Exception)
-                {
-                    break;
-                }
-            }
-
-            DbClear(new DbConnection());
-
-            TvV1(workbook);
-            TvV2(workbook);
         }
 
         public void TvV1(IWorkbook myWorkbook)
@@ -253,6 +233,32 @@ namespace ExcelImportSample
 
             myDbCon.SetParameter(sqlparamList.ToArray());
             myDbCon.execSqlCommand(sqlCommand);
+        }
+
+        private void OnImportExecute(object sender, RoutedEventArgs e)
+        {
+            // NPOI
+            // （WorkbookFactory.Create()を使ってinterfaceで受け取れば、xls, xlsxの両方に対応できます）
+            //IWorkbook workbook = WorkbookFactory.Create(@"C:\SHARE\TV-RECORD.xlsx");
+            // IWorkbook workbook = WorkbookFactory.Create(@"tv.xlsx");
+            IWorkbook workbook = WorkbookFactory.Create(@"C:\Users\JuuichiHirao\Dropbox\Interest\BD番組録画TEST.xlsx");
+
+            for (int idx = 0; idx < 10; idx++)
+            {
+                try
+                {
+                    Debug.Print(idx + " " + workbook.GetSheetName(idx));
+                }
+                catch (Exception)
+                {
+                    break;
+                }
+            }
+
+            DbClear(new DbConnection());
+
+            TvV1(workbook);
+            TvV2(workbook);
         }
     }
 }
