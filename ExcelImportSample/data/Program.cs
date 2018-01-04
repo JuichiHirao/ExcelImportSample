@@ -13,7 +13,7 @@ namespace ExcelImportSample.data
             Remark = "";
         }
 
-        public string Id { get; set; }
+        public string ChannelId { get; set; }
 
         public string Name { get; set; }
 

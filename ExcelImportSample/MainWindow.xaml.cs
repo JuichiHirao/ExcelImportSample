@@ -51,7 +51,7 @@ namespace ExcelImportSample
                 IRow row = worksheet.GetRow(i);
 
                 Program program = new Program();
-                program.Id = GetStringCellData(CellNameProgram.Id, row?.GetCell((int)CellNameProgram.Id));
+                program.ChannelId = GetStringCellData(CellNameProgram.Id, row?.GetCell((int)CellNameProgram.Id));
                 program.Name = GetStringCellData(CellNameProgram.Name, row?.GetCell((int)CellNameProgram.Name));
                 program.AbbreviationName = GetStringCellData(CellNameProgram.Name, row?.GetCell((int)CellNameProgram.Name));
                 program.Kind = GetStringCellData(CellNameProgram.Kind, row?.GetCell((int)CellNameProgram.Kind));
@@ -66,7 +66,7 @@ namespace ExcelImportSample
 
                 DbExport(program, new DbConnection());
 
-                Debug.Print(i + "  " + program.Id + "  Name:" + program.Name + " AbbreviationName:" + program.AbbreviationName + "  Kind:" + program.Kind + "  DateKind:" + program.DateKind);
+                Debug.Print(i + "  " + program.ChannelId + "  Name:" + program.Name + " AbbreviationName:" + program.AbbreviationName + "  Kind:" + program.Kind + "  DateKind:" + program.DateKind);
                 Debug.Print("    RelationId:" + program.RelationId + " OnAirDuration:" + program.OnAirStart + "～" + program.OnAirEnd);
                 Debug.Print("    Detail:" + program.Detail);
             }
@@ -105,12 +105,12 @@ namespace ExcelImportSample
 
         public void TvV2(IWorkbook myWorkbook)
         {
-            ISheet worksheet = myWorkbook.GetSheet("TV録画V2");
+            ISheet worksheet = myWorkbook.GetSheet("TV録画2");
             int lastRow = worksheet.LastRowNum;
             Debug.Print(myWorkbook.NumberOfSheets.ToString());
             Debug.Print("lastRow " + lastRow);
 
-            for (int i = 800; i <= 803; i++)
+            for (int i = 1; i <= lastRow; i++)
             {
                 IRow row = worksheet.GetRow(i);
                 Record record = new Record();
@@ -287,7 +287,7 @@ namespace ExcelImportSample
         public void DbExport(Program myProgram, DbConnection myDbCon)
         {
             string sqlCommand = "INSERT INTO PROGRAM ";
-            sqlCommand += "( PROGRAM_ID, NAME, ABBREVIATION_NAME, RELATION_ID, ON_AIR_START, ON_AIR_END, DETAIL, REMARK ) ";
+            sqlCommand += "( CHANNEL_ID, NAME, ABBREVIATION_NAME, RELATION_ID, ON_AIR_START, ON_AIR_END, DETAIL, REMARK ) ";
             sqlCommand += "VALUES( @Id, @Name, @AbbeviationName, @RelationId, @OnAirStart, @OnAirEnd, @Detail, @Remark )";
 
             SqlCommand command = new SqlCommand();
@@ -297,7 +297,7 @@ namespace ExcelImportSample
             List<SqlParameter> sqlparamList = new List<SqlParameter>();
 
             SqlParameter sqlParam = new SqlParameter("@Id", SqlDbType.Int);
-            sqlParam.Value = myProgram.Id;
+            sqlParam.Value = myProgram.ChannelId;
             sqlparamList.Add(sqlParam);
 
             sqlParam = new SqlParameter("@Name", SqlDbType.VarChar);
@@ -338,7 +338,7 @@ namespace ExcelImportSample
             // （WorkbookFactory.Create()を使ってinterfaceで受け取れば、xls, xlsxの両方に対応できます）
             //IWorkbook workbook = WorkbookFactory.Create(@"C:\SHARE\TV-RECORD.xlsx");
             // IWorkbook workbook = WorkbookFactory.Create(@"tv.xlsx");
-            IWorkbook workbook = WorkbookFactory.Create(@"C:\Users\JuuichiHirao\Dropbox\Interest\BD番組録画TEST.xlsx");
+            IWorkbook workbook = WorkbookFactory.Create(@"C:\Users\JuuichiHirao\Dropbox\Interest\BD番組録画.xlsx");
 
             for (int idx = 0; idx < 10; idx++)
             {
@@ -360,7 +360,7 @@ namespace ExcelImportSample
 
         private void OnImportProgramExecute(object sender, RoutedEventArgs e)
         {
-            IWorkbook workbook = WorkbookFactory.Create(@"C:\Users\JuuichiHirao\Dropbox\Interest\BD番組録画TEST.xlsx");
+            IWorkbook workbook = WorkbookFactory.Create(@"C:\Users\JuuichiHirao\Dropbox\Interest\BD番組録画.xlsx");
 
             for (int idx = 0; idx < 10; idx++)
             {
@@ -374,7 +374,7 @@ namespace ExcelImportSample
                 }
             }
 
-            DbClear(new DbConnection());
+            DbClearProgram(new DbConnection());
 
             Program(workbook);
         }
