@@ -28,6 +28,7 @@ namespace ExcelImportSample
         enum CellNameV1 { DiskNo, Seq, RipStatus, OnAirDate, BeforeRip, Kind, Channel, ProgramId, ProgramName, ProgramDisplay, Detail, StartTime, Duration }
         enum CellName { DiskNo, Seq, RipStatus, OnAirDate, DayOfWeek, ProgramId, ProgramDisplay, StartTime, Duration, Detail }
         enum CellNameProgram { Id, ChannelName, Name, AbbreviationName, Kind, RelationId, DateKind, OnAirStart, OnAirEnd, Detail }
+        enum CellNameChannel { Channel, Name, BroadcastKind, RipId, Remark, VideoRate, VoiceRate }
 
         public MainWindow()
         {
@@ -69,6 +70,33 @@ namespace ExcelImportSample
                 Debug.Print(i + "  " + program.ChannelId + "  Name:" + program.Name + " AbbreviationName:" + program.AbbreviationName + "  Kind:" + program.Kind + "  DateKind:" + program.DateKind);
                 Debug.Print("    RelationId:" + program.RelationId + " OnAirDuration:" + program.OnAirStart + "～" + program.OnAirEnd);
                 Debug.Print("    Detail:" + program.Detail);
+            }
+        }
+
+        public void Channel(IWorkbook myWorkbook)
+        {
+            ISheet worksheet = myWorkbook.GetSheet("CHANNEL");
+            int lastRow = worksheet.LastRowNum;
+            Debug.Print(myWorkbook.NumberOfSheets.ToString());
+            Debug.Print("lastRow " + lastRow);
+
+            for (int i = 1; i <= lastRow; i++)
+            {
+                IRow row = worksheet.GetRow(i);
+
+                ChannelData channel = new ChannelData();
+                channel.Channel = Convert.ToInt32(GetStringCellData(CellNameV1.DiskNo, row?.GetCell((int)CellNameChannel.Channel)));
+                channel.Name = GetStringCellData(CellNameChannel.Name, row?.GetCell((int)CellNameChannel.Name));
+                channel.BroadcastKind = GetStringCellData(CellNameChannel.BroadcastKind, row?.GetCell((int)CellNameChannel.BroadcastKind));
+                channel.RipId = GetStringCellData(CellNameChannel.RipId, row?.GetCell((int)CellNameChannel.RipId));
+                channel.VideoRate = GetStringCellData(CellNameChannel.VideoRate, row?.GetCell((int)CellNameChannel.VideoRate));
+                channel.VoiceRate = GetStringCellData(CellNameChannel.VoiceRate, row?.GetCell((int)CellNameChannel.VoiceRate));
+                channel.Remark = GetStringCellData(CellNameChannel.Remark, row?.GetCell((int)CellNameChannel.Remark));
+
+                DbExport(channel, new DbConnection());
+
+                //Debug.Print(i + "  " + channel.Channel + "  Name:" + channel.Name + " Kind:" + channel.BroadcastKind + "  RipId:" + channel.RipId + "  VideoRate:" + channel.VideoRate + "  VoiceRate:" + channel.VoiceRate);
+                //Debug.Print("    Remark:" + channel.Remark);
             }
         }
 
@@ -131,6 +159,11 @@ namespace ExcelImportSample
                 //Debug.Print(i + "  " + record.DiskNo + "  Seq:" + record.Seq + " Rip:" + record.RipStatus + "  onAirDate:" + record.OnAirDate + "  ProgramId:" + record.ProgramId + "  programName:" + programName);
                 //Debug.Print("    startTime:" + startTime + " duration:" + record.Duration + "  detail:" + record.Detail);
             }
+        }
+
+        private string GetStringCellData(CellNameChannel myCellName, ICell myCell)
+        {
+            return GetStringCellDataCore(myCellName.ToString(), myCell);
         }
 
         private string GetStringCellData(CellName myCellName, ICell myCell)
@@ -237,6 +270,61 @@ namespace ExcelImportSample
 
             command = new SqlCommand(sqlCommand, myDbCon.getSqlConnection());
 
+            myDbCon.execSqlCommand(sqlCommand);
+        }
+
+        public void DbClearChannel(DbConnection myDbCon)
+        {
+            string sqlCommand = "DELETE FROM CHANNEL ";
+
+            SqlCommand command = new SqlCommand();
+
+            command = new SqlCommand(sqlCommand, myDbCon.getSqlConnection());
+
+            myDbCon.execSqlCommand(sqlCommand);
+        }
+
+        public void DbExport(ChannelData myChannel, DbConnection myDbCon)
+        {
+            string sqlCommand = "INSERT INTO CHANNEL ";
+            sqlCommand += "( CHANNEL, NAME, BROADCAST_KIND, RIP_ID, VIDEO_RATE, VOICE_RATE, REMARK ) ";
+            sqlCommand += "VALUES( @Channel, @Name, @BroadcastKind, @RipId, @VideoRate, @VoiceRate, @Remark )";
+
+            SqlCommand command = new SqlCommand();
+
+            command = new SqlCommand(sqlCommand, myDbCon.getSqlConnection());
+
+            List<SqlParameter> sqlparamList = new List<SqlParameter>();
+
+            SqlParameter sqlParam = new SqlParameter("@Channel", SqlDbType.Int);
+            sqlParam.Value = myChannel.Channel;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@Name", SqlDbType.VarChar);
+            sqlParam.Value = myChannel.Name;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@BroadcastKind", SqlDbType.VarChar);
+            sqlParam.Value = myChannel.BroadcastKind;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@RipId", SqlDbType.VarChar);
+            sqlParam.Value = myChannel.RipId;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@VideoRate", SqlDbType.VarChar);
+            sqlParam.Value = myChannel.VideoRate;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@VoiceRate", SqlDbType.VarChar);
+            sqlParam.Value = myChannel.VoiceRate;
+            sqlparamList.Add(sqlParam);
+
+            sqlParam = new SqlParameter("@Remark", SqlDbType.VarChar);
+            sqlParam.Value = myChannel.Remark;
+            sqlparamList.Add(sqlParam);
+
+            myDbCon.SetParameter(sqlparamList.ToArray());
             myDbCon.execSqlCommand(sqlCommand);
         }
 
@@ -377,6 +465,27 @@ namespace ExcelImportSample
             DbClearProgram(new DbConnection());
 
             Program(workbook);
+        }
+
+        private void OnImportChannelExecute(object sender, RoutedEventArgs e)
+        {
+            IWorkbook workbook = WorkbookFactory.Create(@"C:\Users\JuuichiHirao\Dropbox\Interest\BD番組録画.xlsx");
+
+            for (int idx = 0; idx < 10; idx++)
+            {
+                try
+                {
+                    Debug.Print(idx + " " + workbook.GetSheetName(idx));
+                }
+                catch (Exception)
+                {
+                    break;
+                }
+            }
+
+            DbClearChannel(new DbConnection());
+
+            Channel(workbook);
         }
     }
 }
