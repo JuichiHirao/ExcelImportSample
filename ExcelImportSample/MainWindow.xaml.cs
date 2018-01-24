@@ -138,6 +138,7 @@ namespace ExcelImportSample
             Debug.Print(myWorkbook.NumberOfSheets.ToString());
             Debug.Print("lastRow " + lastRow);
 
+            string beforeDiskNo = "";
             for (int i = 1; i <= lastRow; i++)
             {
                 IRow row = worksheet.GetRow(i);
@@ -154,8 +155,21 @@ namespace ExcelImportSample
 
                 record.SetOnAirDate(onAirDate, startTime);
 
+                if (record.ProgramId.Length <= 0 && onAirDate.Length <= 0)
+                    continue;
+
+                if (record.DiskNo == null || record.DiskNo.Length <= 0)
+                {
+                    if (beforeDiskNo.Length > 0)
+                        record.DiskNo = beforeDiskNo;
+                }
+                else
+                    beforeDiskNo = "";
+
                 DbExport(record, new DbConnection());
 
+                if (beforeDiskNo.Length <= 0)
+                    beforeDiskNo = record.DiskNo + "(TEMP)";
                 //Debug.Print(i + "  " + record.DiskNo + "  Seq:" + record.Seq + " Rip:" + record.RipStatus + "  onAirDate:" + record.OnAirDate + "  ProgramId:" + record.ProgramId + "  programName:" + programName);
                 //Debug.Print("    startTime:" + startTime + " duration:" + record.Duration + "  detail:" + record.Detail);
             }
